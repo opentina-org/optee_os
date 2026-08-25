@@ -48,6 +48,11 @@
 register_phys_mem_pgdir(MEM_AREA_IO_SEC, GIC_BASE, CORE_MMU_PGDIR_SIZE);
 #endif
 
+#ifdef SUNXI_GICD_BASE
+/* GICD @0x03400000 and GICR @0x03460000 share one 2MiB pgdir. */
+register_phys_mem_pgdir(MEM_AREA_IO_SEC, SUNXI_GICD_BASE, CORE_MMU_PGDIR_SIZE);
+#endif
+
 #ifdef CONSOLE_UART_BASE
 register_phys_mem_pgdir(MEM_AREA_IO_NSEC,
 			CONSOLE_UART_BASE, SUNXI_UART_REG_SIZE);
@@ -73,6 +78,18 @@ register_phys_mem_pgdir(MEM_AREA_IO_SEC, SUNXI_CPUCFG_BASE,
 
 #ifdef SUNXI_PRCM_BASE
 register_phys_mem_pgdir(MEM_AREA_IO_SEC, SUNXI_PRCM_BASE, SUNXI_PRCM_REG_SIZE);
+#endif
+
+#ifdef SUNXI_SID_BASE
+register_phys_mem_pgdir(MEM_AREA_IO_SEC, SUNXI_SID_BASE, SUNXI_SID_SIZE);
+#endif
+
+#ifdef SUNXI_SPC_BASE
+register_phys_mem_pgdir(MEM_AREA_IO_SEC, SUNXI_SPC_BASE, CORE_MMU_PGDIR_SIZE);
+#endif
+
+#ifdef SUNXI_DRAM_NS_BASE
+register_ddr(SUNXI_DRAM_NS_BASE, SUNXI_DRAM_NS_SIZE);
 #endif
 
 #ifdef CFG_TZC380
@@ -122,7 +139,17 @@ static inline void tzpc_init(void)
 }
 #endif /* SUNXI_TZPC_BASE */
 
-#ifndef CFG_WITH_ARM_TRUSTED_FW
+#ifdef SUNXI_GICD_BASE
+void boot_primary_init_intc(void)
+{
+	gic_init_v3(0, SUNXI_GICD_BASE, SUNXI_GICR_BASE);
+}
+
+void boot_secondary_init_intc(void)
+{
+	gic_init_per_cpu();
+}
+#elif !defined(CFG_WITH_ARM_TRUSTED_FW)
 void boot_primary_init_intc(void)
 {
 	gic_init(GIC_BASE + GICC_OFFSET, GIC_BASE + GICD_OFFSET);

@@ -38,6 +38,34 @@ CFG_TEE_CORE_NB_CORE ?= 4
 CFG_TZC380 ?= y
 endif
 
+# Allwinner A733 (sun60iw2): 2x Cortex-A76 + 6x Cortex-A55, GICv3 (GIC-600).
+# OpenTina TF-A (PLAT=sun60i_a733) keeps BL31 in SRAM A2 at 0x62000 and, when
+# SPD=opteed, loads BL32 at SUNXI_DRAM_BASE (0x40000000). Do not enable
+# CFG_TZC380: A733 DRAM firewall is MEMC/SPC, not the A64 TZC380-like SMC.
+ifeq ($(PLATFORM_FLAVOR),sun60i_a733)
+include core/arch/arm/cpu/cortex-armv8-0.mk
+$(call force,CFG_ARM64_core,y)
+$(call force,CFG_WITH_ARM_TRUSTED_FW,y)
+$(call force,CFG_GIC,y)
+$(call force,CFG_ARM_GICV3,y)
+
+CFG_DRAM_BASE ?= 0x40000000
+# Linux dyn SHM can sit anywhere in NS DRAM. U-Boot reports 8GiB on current
+# OpenTina A733 boards; override CFG_DRAM_SIZE if a board differs.
+CFG_DRAM_SIZE ?= 0x200000000
+CFG_TZDRAM_START ?= $(CFG_DRAM_BASE)
+CFG_TZDRAM_SIZE ?= 0x02000000
+CFG_SHMEM_START ?= 0x42000000
+CFG_SHMEM_SIZE ?= 0x00400000
+CFG_TEE_CORE_NB_CORE ?= 8
+CFG_NUM_THREADS ?= 8
+# DRAM can extend past 4 GiB (up to 16 GiB).
+CFG_CORE_ARM64_PA_BITS ?= 36
+# xtest regression 1001–1003 (core self tests / PTA params / mutex).
+CFG_ENABLE_EMBEDDED_TESTS ?= y
+CFG_TEE_CORE_EMBED_INTERNAL_TESTS ?= y
+endif
+
 ifeq ($(platform-flavor-armv8),1)
 $(call force,CFG_WITH_ARM_TRUSTED_FW,y)
 endif
